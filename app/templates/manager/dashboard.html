@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Панель менеджера</h1>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ hotels_count }}</h2>
+                <p class="mb-0">Гостиницы</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ rooms_count }}</h2>
+                <p class="mb-0">Типы номеров</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-info">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ bookings_count }}</h2>
+                <p class="mb-0">Бронирования</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Гостиницы</h5>
+                <p class="card-text">Добавляйте, редактируйте и удаляйте гостиницы. Управляйте типами номеров для каждой гостиницы.</p>
+                <a href="{{ url_for('manager_hotels') }}" class="btn btn-primary">Управление гостиницами</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Удобства</h5>
+                <p class="card-text">Управляйте каталогом удобств для гостиниц и номеров.</p>
+                <a href="{{ url_for('manager_amenities') }}" class="btn btn-primary">Управление удобствами</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

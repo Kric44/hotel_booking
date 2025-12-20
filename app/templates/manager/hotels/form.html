@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from 'bootstrap5/form.html' import render_form %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('manager_dashboard') }}">Менеджер</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('manager_hotels') }}">Гостиницы</a></li>
+        <li class="breadcrumb-item active">{% if action == 'Add' %}Добавление{% else %}Редактирование{% endif %}</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">{% if action == 'Add' %}Добавить гостиницу{% else %}Редактировать гостиницу{% endif %}</h3>
+            </div>
+            <div class="card-body">
+                {{ render_form(form) }}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('manager_hotels') }}" class="btn btn-secondary">Отмена</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

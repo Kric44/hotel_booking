@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('hotels') }}">Гостиницы</a></li>
+        <li class="breadcrumb-item active">{{ hotel[1] }}</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-md-8">
+        <h1>{{ hotel[1] }}</h1>
+        <p class="text-warning fs-4">
+            {% for i in range(hotel[2]) %}★{% endfor %}
+        </p>
+        <p class="text-muted fs-5">{{ hotel[4] }}, {{ hotel[5] }}</p>
+        
+        {% if hotel[3] %}
+            <p class="lead">{{ hotel[3] }}</p>
+        {% endif %}
+        
+        <h3 class="mt-4">Удобства гостиницы</h3>
+        {% if amenities|length == 0 %}
+            <p class="text-muted">Удобства не указаны.</p>
+        {% else %}
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                {% for amenity in amenities %}
+                    <span class="badge bg-success fs-6">{{ amenity[0] }}</span>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5>Расположение</h5>
+                <p>{{ hotel[4] }}, {{ hotel[5] }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h2 class="mt-5 mb-4">Доступные номера</h2>
+
+{% if room_types|length == 0 %}
+    <div class="alert alert-info">В данной гостинице пока нет доступных номеров.</div>
+{% else %}
+    <div class="row">
+        {% for room in room_types %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">{{ room[1] }}</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Вместимость:</strong> {{ room[2] }} чел.</p>
+                    {% if room[3] %}
+                        <p><strong>Площадь:</strong> {{ room[3] }} м²</p>
+                    {% endif %}
+                    <p class="fs-4 text-primary"><strong>{{ "%.0f"|format(room[4]) }} руб.</strong> / ночь</p>
+                    
+                    {% if room[5] %}
+                        <p class="text-muted">{{ room[5] }}</p>
+                    {% endif %}
+                    
+                    {% if room_amenities[room[0]]|length > 0 %}
+                        <div class="mt-3">
+                            <small class="text-muted">Удобства номера:</small><br>
+                            {% for amenity in room_amenities[room[0]] %}
+                                <span class="badge bg-secondary">{{ amenity[0] }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('book_room', room_type_id=room[0]) }}" class="btn btn-success w-100">
+                            Забронировать
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-primary w-100">
+                            Войдите для бронирования
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}

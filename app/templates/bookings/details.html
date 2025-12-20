@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('my_bookings') }}">Мои бронирования</a></li>
+        <li class="breadcrumb-item active">Бронирование №{{ booking[0] }}</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Бронирование №{{ booking[0] }}</h4>
+                {% if booking[5] == 'new' %}
+                    <span class="badge bg-primary fs-6">Новое</span>
+                {% elif booking[5] == 'confirmed' %}
+                    <span class="badge bg-success fs-6">Подтверждено</span>
+                {% elif booking[5] == 'cancelled' %}
+                    <span class="badge bg-danger fs-6">Отменено</span>
+                {% elif booking[5] == 'completed' %}
+                    <span class="badge bg-secondary fs-6">Завершено</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Гостиница</h5>
+                        <p><strong>Название:</strong> {{ booking[9] }}</p>
+                        <p><strong>Номер:</strong> {{ booking[8] }}</p>
+                        <p><strong>Город:</strong> {{ booking[10] }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Детали бронирования</h5>
+                        <p><strong>Заезд:</strong> {{ booking[1] }}</p>
+                        <p><strong>Выезд:</strong> {{ booking[2] }}</p>
+                        <p><strong>Гостей:</strong> {{ booking[3] }}</p>
+                        <p><strong>Способ оплаты:</strong> 
+                            {% if booking[6] == 'card' %}Банковская карта{% else %}Наличные при заселении{% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h5>Путешественники</h5>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ФИО</th>
+                            <th>Дата рождения</th>
+                            <th>Паспорт</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for traveler in travelers %}
+                        <tr>
+                            <td>{{ traveler[0] }}</td>
+                            <td>{{ traveler[1] }}</td>
+                            <td>{{ traveler[2] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Оплата</h5>
+            </div>
+            <div class="card-body">
+                <p class="fs-3 mb-3"><strong>{{ "%.0f"|format(booking[4]) }} руб.</strong></p>
+                
+                {% if booking[5] == 'new' and booking[6] == 'card' %}
+                    <div class="alert alert-warning">
+                        <strong>Требуется оплата</strong><br>
+                        Для подтверждения бронирования необходимо оплатить картой.
+                    </div>
+                    <form method="POST" action="{{ url_for('pay_booking', booking_id=booking[0]) }}"
+                          onsubmit="return confirm('Подтвердить оплату {{ '%.0f'|format(booking[4]) }} руб.?')">
+                        <button type="submit" class="btn btn-success w-100 mb-2">
+                            Оплатить картой
+                        </button>
+                    </form>
+                {% elif booking[5] == 'new' and booking[6] == 'cash' %}
+                    <div class="alert alert-info">
+                        <strong>Оплата при заселении</strong><br>
+                        Оплатите наличными при заселении в гостиницу.
+                    </div>
+                {% elif booking[5] == 'confirmed' %}
+                    <div class="alert alert-success">
+                        <strong>Оплачено</strong><br>
+                        Бронирование подтверждено.
+                    </div>
+                {% endif %}
+                
+                {% if booking[5] != 'cancelled' and booking[1] > today %}
+                    <hr>
+                    <form method="POST" action="{{ url_for('cancel_booking', booking_id=booking[0]) }}"
+                          onsubmit="return confirm('Вы уверены, что хотите отменить бронирование?')">
+                        <button type="submit" class="btn btn-outline-danger w-100">Отменить бронирование</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

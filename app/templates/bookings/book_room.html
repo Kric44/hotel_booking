@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from 'bootstrap5/form.html' import render_form %}
+
+{% block content %}
+<h1>Бронирование номера</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">{{ room[4] }} — {{ room[1] }}</h4>
+            </div>
+            <div class="card-body">
+                <p><strong>Вместимость:</strong> {{ room[2] }} чел.</p>
+                <p><strong>Цена:</strong> {{ "%.0f"|format(room[3]) }} ₽ за ночь</p>
+                
+                <hr>
+                
+                {{ render_form(form) }}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5>Информация</h5>
+                <p>Выберите даты заезда и выезда, укажите количество гостей.</p>
+                <p class="text-muted">На следующем шаге вы заполните данные о путешественниках.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

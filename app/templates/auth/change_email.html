@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from 'bootstrap5/form.html' import render_form %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">Изменение email</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">Текущий email: <strong>{{ current_user.email }}</strong></p>
+                {{ render_form(form) }}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('profile') }}" class="btn btn-outline-secondary">Назад к профилю</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

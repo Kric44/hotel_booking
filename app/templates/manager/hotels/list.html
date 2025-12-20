@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Управление гостиницами</h1>
+    <a href="{{ url_for('manager_add_hotel') }}" class="btn btn-success">+ Добавить гостиницу</a>
+</div>
+
+{% if hotels|length == 0 %}
+    <div class="alert alert-info">Гостиниц пока нет. Добавьте первую!</div>
+{% else %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th>Звёзды</th>
+                    <th>Город</th>
+                    <th>Страна</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for hotel in hotels %}
+                <tr>
+                    <td>{{ hotel[0] }}</td>
+                    <td>{{ hotel[1] }}</td>
+                    <td>{% for i in range(hotel[2]) %}<span class="text-warning">★</span>{% endfor %}</td>
+                    <td>{{ hotel[3] }}</td>
+                    <td>{{ hotel[4] }}</td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ url_for('manager_hotel_rooms', hotel_id=hotel[0]) }}" 
+                               class="btn btn-sm btn-outline-info">Номера</a>
+                            <a href="{{ url_for('manager_hotel_amenities', hotel_id=hotel[0]) }}" 
+                               class="btn btn-sm btn-outline-success">Удобства</a>
+                            <a href="{{ url_for('manager_edit_hotel', hotel_id=hotel[0]) }}" 
+                               class="btn btn-sm btn-outline-primary">Изменить</a>
+                            <form action="{{ url_for('manager_delete_hotel', hotel_id=hotel[0]) }}" 
+                                  method="POST" class="d-inline m-0"
+                                  onsubmit="return confirm('Удалить гостиницу?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+
+<a href="{{ url_for('manager_dashboard') }}" class="btn btn-secondary">Назад</a>
+{% endblock %}
