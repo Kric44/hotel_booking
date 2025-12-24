@@ -123,7 +123,7 @@ def profile():
                     'UPDATE users SET full_name = %s, phone = %s WHERE id = %s',
                     (form.full_name.data, form.phone.data or None, current_user.id)
                 )
-            flash('Профиль обновлён!', 'success')
+            flash('Профиль обновлен!', 'success')
             return redirect(url_for('profile'))
         except Exception as e:
             flash(f'Ошибка обновления профиля: {e}', 'danger')
@@ -150,7 +150,7 @@ def change_password():
                 new_hash = generate_password_hash(form.new_password.data)
                 con.execute('UPDATE users SET password = %s WHERE id = %s',
                             (new_hash, current_user.id))
-            flash('Пароль изменён!', 'success')
+            flash('Пароль изменен!', 'success')
             return redirect(url_for('profile'))
         except Exception as e:
             flash(f'Ошибка изменения пароля: {e}', 'danger')
@@ -183,7 +183,7 @@ def change_email():
                     'UPDATE users SET email = %s WHERE id = %s',
                     (form.new_email.data, current_user.id)
                 )
-            flash('Email изменён! Используйте новый email для входа.', 'success')
+            flash('Email изменен! Используйте новый email для входа.', 'success')
             return redirect(url_for('profile'))
         except Exception as e:
             flash(f'Ошибка изменения email: {e}', 'danger')
@@ -548,7 +548,7 @@ def cancel_booking(booking_id):
 @login_required
 def manager_dashboard():
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     try:
@@ -568,7 +568,7 @@ def manager_dashboard():
 @login_required
 def manager_hotels():
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     try:
@@ -590,7 +590,7 @@ def manager_hotels():
 @login_required
 def manager_add_hotel():
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     form = HotelForm()
@@ -627,7 +627,7 @@ def manager_add_hotel():
 @login_required
 def manager_edit_hotel(hotel_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     form = HotelForm()
@@ -680,7 +680,7 @@ def manager_edit_hotel(hotel_id):
 @login_required
 def manager_delete_hotel(hotel_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     try:
@@ -713,7 +713,7 @@ def manager_delete_hotel(hotel_id):
 @login_required
 def manager_hotel_rooms(hotel_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     try:
@@ -740,7 +740,7 @@ def manager_hotel_rooms(hotel_id):
 @login_required
 def manager_add_room(hotel_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     form = RoomTypeForm()
@@ -776,7 +776,7 @@ def manager_add_room(hotel_id):
 @login_required
 def manager_edit_room(room_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     form = RoomTypeForm()
@@ -809,7 +809,7 @@ def manager_edit_room(room_id):
                     WHERE id = %s
                 ''', (form.name.data, form.capacity.data, form.area.data,
                       form.price_per_night.data, form.description.data, room_id))
-            flash('Тип номера обновлён!', 'success')
+            flash('Тип номера обновлен!', 'success')
             return redirect(url_for('manager_hotel_rooms', hotel_id=room[6]))
         except Exception as e:
             flash(f'Ошибка обновления номера: {e}', 'danger')
@@ -829,7 +829,7 @@ def manager_edit_room(room_id):
 @login_required
 def manager_delete_room(room_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     try:
@@ -849,7 +849,7 @@ def manager_delete_room(room_id):
             con.execute('DELETE FROM room_type_amenity WHERE room_type_id = %s', (room_id,))
             con.execute('DELETE FROM room_type WHERE id = %s', (room_id,))
 
-        flash('Тип номера удалён!', 'success')
+        flash('Тип номера удален!', 'success')
         return redirect(url_for('manager_hotel_rooms', hotel_id=hotel_id))
     except Exception as e:
         flash(f'Ошибка удаления номера: {e}', 'danger')
@@ -860,7 +860,7 @@ def manager_delete_room(room_id):
 @login_required
 def manager_amenities():
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     try:
@@ -878,7 +878,7 @@ def manager_amenities():
 @login_required
 def manager_add_hotel_amenity():
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     name = request.form.get('name', '').strip()
@@ -900,7 +900,7 @@ def manager_add_hotel_amenity():
 @login_required
 def manager_delete_hotel_amenity(amenity_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     try:
@@ -918,7 +918,7 @@ def manager_delete_hotel_amenity(amenity_id):
 @login_required
 def manager_add_room_amenity():
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     name = request.form.get('name', '').strip()
@@ -940,7 +940,7 @@ def manager_add_room_amenity():
 @login_required
 def manager_delete_room_amenity(amenity_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     try:
@@ -958,7 +958,7 @@ def manager_delete_room_amenity(amenity_id):
 @login_required
 def manager_hotel_amenities(hotel_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     try:
@@ -996,7 +996,7 @@ def manager_hotel_amenities(hotel_id):
 @login_required
 def manager_room_amenities(room_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён', 'danger')
+        flash('Доступ запрещен', 'danger')
         return redirect(url_for('index'))
 
     try:
