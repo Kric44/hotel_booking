@@ -1,59 +1,46 @@
 {% extends "base.html" %}
 
 {% block content %}
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('manager_dashboard') }}">Менеджер</a></li>
-        <li class="breadcrumb-item"><a href="{{ url_for('manager_hotels') }}">Гостиницы</a></li>
-        <li class="breadcrumb-item active">{{ hotel[1] }} — Номера</li>
-    </ol>
-</nav>
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Номера: {{ hotel[1] }}</h1>
-    <a href="{{ url_for('manager_add_room', hotel_id=hotel[0]) }}" class="btn btn-success">+ Добавить тип номера</a>
+<p><a href="{{ url_for('manager_hotels') }}">< Назад</a></p>
+<div class="d-flex justify-content-between align-items-start">
+    <h1 class="mb-3">Номера: {{ hotel[1] }}</h1>
+    <a href="{{ url_for('manager_add_room', hotel_id=hotel[0]) }}" class="btn btn-success">+ Добавить</a>
 </div>
 
 {% if rooms|length == 0 %}
-    <div class="alert alert-info">Типов номеров пока нет. Добавьте первый!</div>
+    <p>Номеров нет.</p>
 {% else %}
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead class="table-dark">
-                <tr>
-                    <th>Название</th>
-                    <th>Вместимость</th>
-                    <th>Площадь</th>
-                    <th>Цена/ночь</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for room in rooms %}
-                <tr>
-                    <td>{{ room[1] }}</td>
-                    <td>{{ room[2] }} чел.</td>
-                    <td>{% if room[3] %}{{ room[3] }} м²{% else %}—{% endif %}</td>
-                    <td>{{ "%.0f"|format(room[4]) }} руб.</td>
-                    <td>
-                        <div class="d-flex flex-wrap gap-2">
-                            <a href="{{ url_for('manager_room_amenities', room_id=room[0]) }}" 
-                               class="btn btn-sm btn-outline-success">Удобства</a>
-                            <a href="{{ url_for('manager_edit_room', room_id=room[0]) }}" 
-                               class="btn btn-sm btn-outline-primary">Изменить</a>
-                            <form action="{{ url_for('manager_delete_room', room_id=room[0]) }}" 
-                                  method="POST" class="d-inline m-0"
-                                  onsubmit="return confirm('Удалить тип номера?');">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Название</th>
+                <th>Вместимость</th>
+                <th>Площадь</th>
+                <th>Цена</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in rooms %}
+            <tr>
+                <td>{{ r[1] }}</td>
+                <td>{{ r[2] }} чел.</td>
+                <td>
+                    {% if r[3] %}{{ r[3] }} м²
+                    {% else %} –
+                    {% endif %}
+                </td>
+                <td>{{ r[4] }} ₽</td>
+                <td>
+                    <a href="{{ url_for('manager_room_amenities', room_id=r[0]) }}" class="btn btn-sm btn-outline-success">Удобства</a>
+                    <a href="{{ url_for('manager_edit_room', room_id=r[0]) }}" class="btn btn-sm btn-outline-primary">Изменить</a>
+                    <form action="{{ url_for('manager_delete_room', room_id=r[0]) }}" method="POST" class="d-inline">
+                        <button class="btn btn-sm btn-outline-danger">Удалить</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 {% endif %}
-
-<a href="{{ url_for('manager_hotels') }}" class="btn btn-secondary">Назад к гостиницам</a>
 {% endblock %}

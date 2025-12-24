@@ -1,40 +1,29 @@
 {% extends "base.html" %}
 
 {% block content %}
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('manager_dashboard') }}">Менеджер</a></li>
-        <li class="breadcrumb-item active">Каталог удобств</li>
-    </ol>
-</nav>
-
-<h1>Каталог удобств</h1>
-<p class="text-muted">Управление списком доступных удобств для гостиниц и номеров</p>
+<p><a href="{{ url_for('manager_dashboard') }}">< Назад</a></p>
+<h1>Удобства</h1>
 
 <div class="row">
-    <!-- Удобства гостиниц -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Удобства гостиниц</h5>
-            </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Удобства гостиниц</div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('manager_add_hotel_amenity') }}" class="mb-3">
                     <div class="input-group">
-                        <input type="text" name="name" class="form-control" placeholder="Например: Бассейн, Парковка, Wi-Fi..." required>
-                        <button type="submit" class="btn btn-success">Добавить</button>
+                        <input type="text" name="name" class="form-control" placeholder="Название" required>
+                        <button class="btn btn-success">Добавить</button>
                     </div>
                 </form>
-                
                 {% if hotel_amenities|length == 0 %}
-                    <p class="text-muted">Удобств пока нет. Добавьте выше!</p>
+                    <p class="text-muted>Пусто</p>
                 {% else %}
                     <ul class="list-group">
-                        {% for amenity in hotel_amenities %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {{ amenity[1] }}
-                            <form action="{{ url_for('manager_delete_hotel_amenity', amenity_id=amenity[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Удалить удобство?');">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">×</button>
+                        {% for a in hotel_amenities %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            {{ a[1] }}
+                            <form action="{{ url_for('manager_delete_hotel_amenity', amenity_id=a[0]) }}" method="POST">
+                                <button class="btn btn-sm btn-outline-danger">×</button>
                             </form>
                         </li>
                         {% endfor %}
@@ -44,29 +33,25 @@
         </div>
     </div>
     
-    <!-- Удобства номеров -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">Удобства номеров</h5>
-            </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Удобства номеров</div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('manager_add_room_amenity') }}" class="mb-3">
                     <div class="input-group">
-                        <input type="text" name="name" class="form-control" placeholder="Например: Кондиционер, Телевизор, Мини-бар..." required>
-                        <button type="submit" class="btn btn-success">Добавить</button>
+                        <input type="text" name="name" class="form-control" placeholder="Название" required>
+                        <button class="btn btn-success">Добавить</button>
                     </div>
                 </form>
-                
                 {% if room_amenities|length == 0 %}
-                    <p class="text-muted">Удобств пока нет. Добавьте выше!</p>
+                    <p class="text-muted">Пусто</p>
                 {% else %}
                     <ul class="list-group">
-                        {% for amenity in room_amenities %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {{ amenity[1] }}
-                            <form action="{{ url_for('manager_delete_room_amenity', amenity_id=amenity[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Удалить удобство?');">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">×</button>
+                        {% for a in room_amenities %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            {{ a[1] }}
+                            <form action="{{ url_for('manager_delete_room_amenity', amenity_id=a[0]) }}" method="POST">
+                                <button class="btn btn-sm btn-outline-danger">×</button>
                             </form>
                         </li>
                         {% endfor %}
@@ -76,6 +61,4 @@
         </div>
     </div>
 </div>
-
-<a href="{{ url_for('manager_dashboard') }}" class="btn btn-secondary">Назад</a>
 {% endblock %}

@@ -1,56 +1,40 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Данные путешественников</h1>
-
+<h1>Данные гостей</h1>
 <div class="row">
     <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Информация о гостях</h5>
-            </div>
-            <div class="card-body">
-                <form method="POST">
-                    {% for i in range(guests_count) %}
-                    <div class="card mb-3">
-                        <div class="card-header bg-secondary text-white">Гость {{ i + 1 }}</div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label">ФИО</label>
-                                <input type="text" name="traveler_{{ i }}_name" class="form-control" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Дата рождения</label>
-                                <input type="date" name="traveler_{{ i }}_birth" class="form-control" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Номер паспорта</label>
-                                <input type="text" name="traveler_{{ i }}_passport" class="form-control" required>
-                            </div>
-                        </div>
+        <form method="POST">
+            {% for i in range(guests_count) %}
+            <div class="card mb-3">
+                <div class="card-header">Гость {{ i + 1 }}</div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label>ФИО</label>
+                        <input type="text" name="traveler_{{ i }}_name" class="form-control" required>
                     </div>
-                    {% endfor %}
-                    
-                    <button type="submit" class="btn btn-success btn-lg">Подтвердить бронирование</button>
-                    <a href="{{ url_for('hotels') }}" class="btn btn-outline-secondary">Отмена</a>
-                </form>
+                    <div class="mb-2">
+                        <label>Дата рождения</label>
+                        <input type="date" name="traveler_{{ i }}_birth" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Паспорт</label>
+                        <input type="text" name="traveler_{{ i }}_passport" class="form-control" required>
+                    </div>
+                </div>
             </div>
-        </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-success">Подтвердить</button>
+        </form>
     </div>
     <div class="col-md-4">
-        <div class="card bg-light">
+        <div class="card">
             <div class="card-body">
-                <h5>Итого</h5>
-                {% if room %}
-                    <p><strong>Гостиница:</strong> {{ room[1] }}</p>
-                    <p><strong>Номер:</strong> {{ room[0] }}</p>
-                {% endif %}
-                <p><strong>Заезд:</strong> {{ booking_data.check_in }}</p>
-                <p><strong>Выезд:</strong> {{ booking_data.check_out }}</p>
+                <p><strong>Заезд:</strong> {{ booking_data.check_in }} с 15:00</p>
+                <p><strong>Выезд:</strong> {{ booking_data.check_out }} до 12:00</p>
                 <p><strong>Ночей:</strong> {{ booking_data.nights }}</p>
-                <p><strong>Гостей:</strong> {{ booking_data.guests_count }}</p>
                 <hr>
-                <p class="fs-4"><strong>Итого: {{ "%.0f"|format(booking_data.total_price) }} ₽</strong></p>
+                <p class="fs-4"><strong>{{ "%.0f"|format(booking_data.total_price) }} руб.</strong></p>
             </div>
         </div>
     </div>

@@ -1,6 +1,5 @@
 from flask_login import UserMixin
 from app import login_manager
-from app.db import get_connection
 
 
 class User(UserMixin):
@@ -19,11 +18,11 @@ class User(UserMixin):
     def is_client(self):
         return self.role == 'client'
 
-
 @login_manager.user_loader
 def load_user(user_id):
+    from app.routes import connection
     try:
-        with get_connection() as con:
+        with connection() as con:
             cur = con.execute(
                 'SELECT id, email, password, role, full_name, phone, birth_date '
                 'FROM users WHERE id = %s',
@@ -41,5 +40,5 @@ def load_user(user_id):
                     birth_date=row[6]
                 )
     except Exception as e:
-        print(f"Error loading user: {e}")
+        print(f"Ошибка подключения: {e}")
     return None

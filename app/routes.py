@@ -1,23 +1,39 @@
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, session
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from urllib.parse import urlsplit
 from datetime import date, datetime
 from app import app
-from app.db import get_connection
+import psycopg
 from app.user import User
-from app.forms import (LoginForm, RegistrationForm, ProfileForm, ChangePasswordForm,
-                       BookingForm, TravelerForm)
+from app.forms import (
+    LoginForm,
+    RegistrationForm,
+    ProfileForm,
+    ChangePasswordForm,
+    ChangeEmailForm,
+    BookingForm,
+    HotelForm,
+    RoomTypeForm
+)
 
 
-# ==================== ГЛАВНАЯ ====================
+def connection():
+    if app.config.get('DATABASE_URL'):
+        return psycopg.connect(app.config['DATABASE_URL'])
+    return psycopg.connect(
+        host=app.config['DB_SERVER'],
+        port=app.config['DB_PORT'],
+        dbname=app.config['DB_NAME'],
+        user=app.config['DB_USER'],
+        password=app.config['DB_PASSWORD'],
+    )
+
 
 @app.route('/')
 def index():
     return render_template('index.html', title='Главная')
 
-
-# ==================== АВТОРИЗАЦИЯ ====================
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -27,7 +43,7 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         try:
-            with get_connection() as con:
+            with connection() as con:
                 cur = con.execute(
                     'SELECT id, email, password, role, full_name, phone, birth_date '
                     'FROM users WHERE email = %s',
@@ -43,7 +59,7 @@ def login():
                 id=row[0], email=row[1], password=row[2], role=row[3],
                 full_name=row[4], phone=row[5], birth_date=row[6]
             )
-            login_user(user, remember=form.remember_me.data)
+            login_user(user)
             flash(f'Добро пожаловать, {user.full_name}!', 'success')
 
             next_page = request.args.get('next')
@@ -65,7 +81,7 @@ def register():
     form = RegistrationForm()
     if form.validate_on_submit():
         try:
-            with get_connection() as con:
+            with connection() as con:
                 cur = con.execute('SELECT id FROM users WHERE email = %s', (form.email.data,))
                 if cur.fetchone():
                     flash('Этот email уже зарегистрирован', 'danger')
@@ -102,7 +118,7 @@ def profile():
 
     if form.validate_on_submit():
         try:
-            with get_connection() as con:
+            with connection() as con:
                 con.execute(
                     'UPDATE users SET full_name = %s, phone = %s WHERE id = %s',
                     (form.full_name.data, form.phone.data or None, current_user.id)
@@ -130,7 +146,7 @@ def change_password():
             return redirect(url_for('change_password'))
 
         try:
-            with get_connection() as con:
+            with connection() as con:
                 new_hash = generate_password_hash(form.new_password.data)
                 con.execute('UPDATE users SET password = %s WHERE id = %s',
                             (new_hash, current_user.id))
@@ -141,10 +157,10 @@ def change_password():
 
     return render_template('auth/change_password.html', title='Изменение пароля', form=form)
 
+
 @app.route('/change-email', methods=['GET', 'POST'])
 @login_required
 def change_email():
-    from app.forms import ChangeEmailForm
     form = ChangeEmailForm()
 
     if form.validate_on_submit():
@@ -153,17 +169,16 @@ def change_email():
             return redirect(url_for('change_email'))
 
         try:
-            with get_connection() as con:
-                # Проверяем, не занят ли email
+            with connection() as con:
                 existing = con.execute(
                     'SELECT id FROM users WHERE email = %s AND id != %s',
                     (form.new_email.data, current_user.id)
                 ).fetchone()
-                
+
                 if existing:
                     flash('Этот email уже используется другим пользователем', 'danger')
                     return redirect(url_for('change_email'))
-                
+
                 con.execute(
                     'UPDATE users SET email = %s WHERE id = %s',
                     (form.new_email.data, current_user.id)
@@ -180,7 +195,7 @@ def change_email():
 @login_required
 def pay_booking(booking_id):
     try:
-        with get_connection() as con:
+        with connection() as con:
             booking = con.execute('''
                 SELECT id, status, payment_method FROM booking
                 WHERE id = %s AND user_id = %s
@@ -198,7 +213,6 @@ def pay_booking(booking_id):
                 flash('Оплата картой не требуется для этого бронирования', 'warning')
                 return redirect(url_for('my_bookings'))
 
-            # "Оплачиваем" — меняем статус на confirmed
             con.execute(
                 "UPDATE booking SET status = 'confirmed' WHERE id = %s",
                 (booking_id,)
@@ -210,7 +224,6 @@ def pay_booking(booking_id):
         flash(f'Ошибка оплаты: {e}', 'danger')
         return redirect(url_for('my_bookings'))
 
-# ==================== ГОСТИНИЦЫ ====================
 
 @app.route('/hotels')
 def hotels():
@@ -219,11 +232,9 @@ def hotels():
     stars = request.args.get('stars', type=int)
 
     try:
-        with get_connection() as con:
-            # Получаем страны для фильтра
+        with connection() as con:
             countries = con.execute('SELECT id, name FROM country ORDER BY name').fetchall()
 
-            # Получаем города для фильтра (все или по стране)
             if country_id:
                 cities = con.execute(
                     'SELECT id, name FROM city WHERE country_id = %s ORDER BY name',
@@ -232,9 +243,8 @@ def hotels():
             else:
                 cities = con.execute('SELECT id, name FROM city ORDER BY name').fetchall()
 
-            # Строим запрос с фильтрами
             query = '''
-                SELECT h.id, h.name, h.stars, h.description, c.name as city, co.name as country
+                SELECT h.id, h.name, h.stars, h.description, c.name, co.name
                 FROM hotel h
                 JOIN city c ON h.city_id = c.id
                 JOIN country co ON c.country_id = co.id
@@ -268,10 +278,9 @@ def hotels():
 @app.route('/hotels/<int:hotel_id>')
 def hotel_details(hotel_id):
     try:
-        with get_connection() as con:
-            # Получаем информацию о гостинице
+        with connection() as con:
             hotel = con.execute('''
-                SELECT h.id, h.name, h.stars, h.description, c.name as city, co.name as country
+                SELECT h.id, h.name, h.stars, h.description, c.name, co.name
                 FROM hotel h
                 JOIN city c ON h.city_id = c.id
                 JOIN country co ON c.country_id = co.id
@@ -282,7 +291,6 @@ def hotel_details(hotel_id):
                 flash('Гостиница не найдена', 'danger')
                 return redirect(url_for('hotels'))
 
-            # Получаем удобства гостиницы
             amenities = con.execute('''
                 SELECT ha.name FROM hotel_amenity ha
                 JOIN hotel_amenity_link hal ON ha.id = hal.amenity_id
@@ -290,14 +298,12 @@ def hotel_details(hotel_id):
                 ORDER BY ha.name
             ''', (hotel_id,)).fetchall()
 
-            # Получаем типы номеров
             room_types = con.execute('''
                 SELECT id, name, capacity, area, price_per_night, description
                 FROM room_type WHERE hotel_id = %s
                 ORDER BY price_per_night
             ''', (hotel_id,)).fetchall()
 
-            # Получаем удобства для каждого типа номера
             room_amenities = {}
             for room in room_types:
                 room_amenities[room[0]] = con.execute('''
@@ -315,16 +321,13 @@ def hotel_details(hotel_id):
         return redirect(url_for('hotels'))
 
 
-# ==================== БРОНИРОВАНИЕ ====================
-
 @app.route('/book/<int:room_type_id>', methods=['GET', 'POST'])
 @login_required
 def book_room(room_type_id):
     try:
-        with get_connection() as con:
-            # Получаем информацию о типе номера
+        with connection() as con:
             room = con.execute('''
-                SELECT rt.id, rt.name, rt.capacity, rt.price_per_night, h.name as hotel_name, h.id as hotel_id
+                SELECT rt.id, rt.name, rt.capacity, rt.price_per_night, h.name, h.id
                 FROM room_type rt
                 JOIN hotel h ON rt.hotel_id = h.id
                 WHERE rt.id = %s
@@ -341,7 +344,6 @@ def book_room(room_type_id):
             check_out = form.check_out_date.data
             guests = form.guests_count.data
 
-            # Валидация
             if check_in < date.today():
                 flash('Дата заезда не может быть в прошлом', 'danger')
                 return redirect(url_for('book_room', room_type_id=room_type_id))
@@ -350,16 +352,13 @@ def book_room(room_type_id):
                 flash('Дата выезда должна быть позже даты заезда', 'danger')
                 return redirect(url_for('book_room', room_type_id=room_type_id))
 
-            if guests > room[2]:  # вместимость
+            if guests > room[2]:
                 flash(f'Этот номер вмещает максимум {room[2]} гостей', 'danger')
                 return redirect(url_for('book_room', room_type_id=room_type_id))
 
-            # Расчёт стоимости
             nights = (check_out - check_in).days
             total_price = nights * float(room[3])
 
-            # Сохраняем данные бронирования в сессию для следующего шага
-            from flask import session
             session['booking_data'] = {
                 'room_type_id': room_type_id,
                 'check_in': check_in.isoformat(),
@@ -382,8 +381,6 @@ def book_room(room_type_id):
 @app.route('/book/travelers', methods=['GET', 'POST'])
 @login_required
 def add_travelers():
-    from flask import session
-
     booking_data = session.get('booking_data')
     if not booking_data:
         flash('Пожалуйста, начните процесс бронирования заново', 'warning')
@@ -413,8 +410,7 @@ def add_travelers():
 
         if valid:
             try:
-                with get_connection() as con:
-                    # Создаём бронирование
+                with connection() as con:
                     cur = con.execute('''
                         INSERT INTO booking 
                         (check_in_date, check_out_date, guests_count, total_price, 
@@ -434,7 +430,6 @@ def add_travelers():
                     ))
                     booking_id = cur.fetchone()[0]
 
-                    # Добавляем путешественников
                     for t in travelers:
                         con.execute('''
                             INSERT INTO traveler (full_name, birth_date, passport_number, booking_id)
@@ -448,11 +443,10 @@ def add_travelers():
             except Exception as e:
                 flash(f'Ошибка создания бронирования: {e}', 'danger')
 
-    # Получаем информацию о номере для отображения
     try:
-        with get_connection() as con:
+        with connection() as con:
             room = con.execute('''
-                SELECT rt.name, h.name as hotel_name, rt.price_per_night
+                SELECT rt.name, h.name, rt.price_per_night
                 FROM room_type rt
                 JOIN hotel h ON rt.hotel_id = h.id
                 WHERE rt.id = %s
@@ -469,10 +463,10 @@ def add_travelers():
 @login_required
 def my_bookings():
     try:
-        with get_connection() as con:
+        with connection() as con:
             bookings = con.execute('''
                 SELECT b.id, b.check_in_date, b.check_out_date, b.guests_count,
-                       b.total_price, b.status, rt.name as room_name, h.name as hotel_name
+                       b.total_price, b.status, rt.name, h.name
                 FROM booking b
                 JOIN room_type rt ON b.room_type_id = rt.id
                 JOIN hotel h ON rt.hotel_id = h.id
@@ -480,7 +474,7 @@ def my_bookings():
                 ORDER BY b.check_in_date DESC
             ''', (current_user.id,)).fetchall()
 
-        return render_template('bookings/my_bookings.html', title='Мои бронирования',
+        return render_template('my_bookings.html', title='Мои бронирования',
                                bookings=bookings, today=date.today())
     except Exception as e:
         flash(f'Ошибка загрузки бронирований: {e}', 'danger')
@@ -491,11 +485,11 @@ def my_bookings():
 @login_required
 def booking_details(booking_id):
     try:
-        with get_connection() as con:
+        with connection() as con:
             booking = con.execute('''
                 SELECT b.id, b.check_in_date, b.check_out_date, b.guests_count,
                        b.total_price, b.status, b.payment_method, b.cancellation_fee,
-                       rt.name as room_name, h.name as hotel_name, c.name as city
+                       rt.name, h.name, c.name
                 FROM booking b
                 JOIN room_type rt ON b.room_type_id = rt.id
                 JOIN hotel h ON rt.hotel_id = h.id
@@ -523,7 +517,7 @@ def booking_details(booking_id):
 @login_required
 def cancel_booking(booking_id):
     try:
-        with get_connection() as con:
+        with connection() as con:
             booking = con.execute('''
                 SELECT id, check_in_date, status FROM booking
                 WHERE id = %s AND user_id = %s
@@ -550,17 +544,15 @@ def cancel_booking(booking_id):
         return redirect(url_for('my_bookings'))
 
 
-# ==================== МЕНЕДЖЕР ====================
-
 @app.route('/manager')
 @login_required
 def manager_dashboard():
     if not current_user.is_manager():
-        flash('Доступ запрещён. Только для менеджеров.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
     try:
-        with get_connection() as con:
+        with connection() as con:
             hotels_count = con.execute('SELECT COUNT(*) FROM hotel').fetchone()[0]
             rooms_count = con.execute('SELECT COUNT(*) FROM room_type').fetchone()[0]
             bookings_count = con.execute('SELECT COUNT(*) FROM booking').fetchone()[0]
@@ -572,19 +564,17 @@ def manager_dashboard():
                            bookings_count=bookings_count)
 
 
-# ==================== МЕНЕДЖЕР: ГОСТИНИЦЫ ====================
-
 @app.route('/manager/hotels')
 @login_required
 def manager_hotels():
     if not current_user.is_manager():
-        flash('Доступ запрещён. Только для менеджеров.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
     try:
-        with get_connection() as con:
+        with connection() as con:
             hotels = con.execute('''
-                SELECT h.id, h.name, h.stars, c.name as city, co.name as country
+                SELECT h.id, h.name, h.stars, c.name, co.name
                 FROM hotel h
                 JOIN city c ON h.city_id = c.id
                 JOIN country co ON c.country_id = co.id
@@ -600,16 +590,15 @@ def manager_hotels():
 @login_required
 def manager_add_hotel():
     if not current_user.is_manager():
-        flash('Доступ запрещён. Только для менеджеров.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
-    from app.forms import HotelForm
     form = HotelForm()
 
     try:
-        with get_connection() as con:
+        with connection() as con:
             cities = con.execute('''
-                SELECT c.id, c.name, co.name as country 
+                SELECT c.id, c.name, co.name
                 FROM city c
                 JOIN country co ON c.country_id = co.id
                 ORDER BY co.name, c.name
@@ -621,7 +610,7 @@ def manager_add_hotel():
 
     if form.validate_on_submit():
         try:
-            with get_connection() as con:
+            with connection() as con:
                 con.execute('''
                     INSERT INTO hotel (name, stars, description, city_id)
                     VALUES (%s, %s, %s, %s)
@@ -638,24 +627,21 @@ def manager_add_hotel():
 @login_required
 def manager_edit_hotel(hotel_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён. Только для менеджеров.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
-    from app.forms import HotelForm
     form = HotelForm()
 
     try:
-        with get_connection() as con:
-            # Загружаем города для выпадающего списка
+        with connection() as con:
             cities = con.execute('''
-                SELECT c.id, c.name, co.name as country 
+                SELECT c.id, c.name, co.name
                 FROM city c
                 JOIN country co ON c.country_id = co.id
                 ORDER BY co.name, c.name
             ''').fetchall()
             form.city_id.choices = [(c[0], f"{c[1]}, {c[2]}") for c in cities]
 
-            # Загружаем данные гостиницы
             hotel = con.execute('''
                 SELECT id, name, stars, description, city_id
                 FROM hotel WHERE id = %s
@@ -670,7 +656,7 @@ def manager_edit_hotel(hotel_id):
 
     if form.validate_on_submit():
         try:
-            with get_connection() as con:
+            with connection() as con:
                 con.execute('''
                     UPDATE hotel SET name = %s, stars = %s, description = %s, city_id = %s
                     WHERE id = %s
@@ -686,19 +672,19 @@ def manager_edit_hotel(hotel_id):
         form.description.data = hotel[3]
         form.city_id.data = hotel[4]
 
-    return render_template('manager/hotels/form.html', title='Редактировать гостиницу', form=form, action='Edit', hotel_id=hotel_id)
+    return render_template('manager/hotels/form.html', title='Редактировать гостиницу',
+                           form=form, action='Edit', hotel_id=hotel_id)
 
 
 @app.route('/manager/hotels/<int:hotel_id>/delete', methods=['POST'])
 @login_required
 def manager_delete_hotel(hotel_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён. Только для менеджеров.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
     try:
-        with get_connection() as con:
-            # Проверяем наличие бронирований
+        with connection() as con:
             bookings = con.execute('''
                 SELECT COUNT(*) FROM booking b
                 JOIN room_type rt ON b.room_type_id = rt.id
@@ -709,7 +695,6 @@ def manager_delete_hotel(hotel_id):
                 flash('Нельзя удалить гостиницу с существующими бронированиями', 'danger')
                 return redirect(url_for('manager_hotels'))
 
-            # Удаляем связанные данные
             con.execute('DELETE FROM hotel_amenity_link WHERE hotel_id = %s', (hotel_id,))
             con.execute(
                 'DELETE FROM room_type_amenity WHERE room_type_id IN (SELECT id FROM room_type WHERE hotel_id = %s)',
@@ -724,17 +709,15 @@ def manager_delete_hotel(hotel_id):
     return redirect(url_for('manager_hotels'))
 
 
-# ==================== МЕНЕДЖЕР: ТИПЫ НОМЕРОВ ====================
-
 @app.route('/manager/hotels/<int:hotel_id>/rooms')
 @login_required
 def manager_hotel_rooms(hotel_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён. Только для менеджеров.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
     try:
-        with get_connection() as con:
+        with connection() as con:
             hotel = con.execute('SELECT id, name FROM hotel WHERE id = %s', (hotel_id,)).fetchone()
             if not hotel:
                 flash('Гостиница не найдена', 'danger')
@@ -757,14 +740,13 @@ def manager_hotel_rooms(hotel_id):
 @login_required
 def manager_add_room(hotel_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён. Только для менеджеров.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
-    from app.forms import RoomTypeForm
     form = RoomTypeForm()
 
     try:
-        with get_connection() as con:
+        with connection() as con:
             hotel = con.execute('SELECT id, name FROM hotel WHERE id = %s', (hotel_id,)).fetchone()
             if not hotel:
                 flash('Гостиница не найдена', 'danger')
@@ -775,7 +757,7 @@ def manager_add_room(hotel_id):
 
     if form.validate_on_submit():
         try:
-            with get_connection() as con:
+            with connection() as con:
                 con.execute('''
                     INSERT INTO room_type (name, capacity, area, price_per_night, description, hotel_id)
                     VALUES (%s, %s, %s, %s, %s, %s)
@@ -794,17 +776,16 @@ def manager_add_room(hotel_id):
 @login_required
 def manager_edit_room(room_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён. Только для менеджеров.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
-    from app.forms import RoomTypeForm
     form = RoomTypeForm()
 
     try:
-        with get_connection() as con:
+        with connection() as con:
             room = con.execute('''
                 SELECT rt.id, rt.name, rt.capacity, rt.area, rt.price_per_night, 
-                       rt.description, rt.hotel_id, h.name as hotel_name
+                       rt.description, rt.hotel_id, h.name
                 FROM room_type rt
                 JOIN hotel h ON rt.hotel_id = h.id
                 WHERE rt.id = %s
@@ -821,7 +802,7 @@ def manager_edit_room(room_id):
 
     if form.validate_on_submit():
         try:
-            with get_connection() as con:
+            with connection() as con:
                 con.execute('''
                     UPDATE room_type 
                     SET name = %s, capacity = %s, area = %s, price_per_night = %s, description = %s
@@ -848,11 +829,11 @@ def manager_edit_room(room_id):
 @login_required
 def manager_delete_room(room_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён. Только для менеджеров.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
     try:
-        with get_connection() as con:
+        with connection() as con:
             room = con.execute('SELECT hotel_id FROM room_type WHERE id = %s', (room_id,)).fetchone()
             if not room:
                 flash('Тип номера не найден', 'danger')
@@ -860,7 +841,6 @@ def manager_delete_room(room_id):
 
             hotel_id = room[0]
 
-            # Проверяем наличие бронирований
             bookings = con.execute('SELECT COUNT(*) FROM booking WHERE room_type_id = %s', (room_id,)).fetchone()[0]
             if bookings > 0:
                 flash('Нельзя удалить тип номера с существующими бронированиями', 'danger')
@@ -876,17 +856,15 @@ def manager_delete_room(room_id):
         return redirect(url_for('manager_hotels'))
 
 
-# ==================== МЕНЕДЖЕР: УДОБСТВА ====================
-
 @app.route('/manager/amenities')
 @login_required
 def manager_amenities():
     if not current_user.is_manager():
-        flash('Доступ запрещён. Только для менеджеров.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
     try:
-        with get_connection() as con:
+        with connection() as con:
             hotel_amenities = con.execute('SELECT id, name FROM hotel_amenity ORDER BY name').fetchall()
             room_amenities = con.execute('SELECT id, name FROM room_amenity ORDER BY name').fetchall()
         return render_template('manager/amenities/list.html', title='Управление удобствами',
@@ -900,7 +878,7 @@ def manager_amenities():
 @login_required
 def manager_add_hotel_amenity():
     if not current_user.is_manager():
-        flash('Доступ запрещён.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
     name = request.form.get('name', '').strip()
@@ -909,7 +887,7 @@ def manager_add_hotel_amenity():
         return redirect(url_for('manager_amenities'))
 
     try:
-        with get_connection() as con:
+        with connection() as con:
             con.execute('INSERT INTO hotel_amenity (name) VALUES (%s)', (name,))
         flash('Удобство гостиницы добавлено!', 'success')
     except Exception as e:
@@ -922,11 +900,11 @@ def manager_add_hotel_amenity():
 @login_required
 def manager_delete_hotel_amenity(amenity_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
     try:
-        with get_connection() as con:
+        with connection() as con:
             con.execute('DELETE FROM hotel_amenity_link WHERE amenity_id = %s', (amenity_id,))
             con.execute('DELETE FROM hotel_amenity WHERE id = %s', (amenity_id,))
         flash('Удобство удалено!', 'success')
@@ -940,7 +918,7 @@ def manager_delete_hotel_amenity(amenity_id):
 @login_required
 def manager_add_room_amenity():
     if not current_user.is_manager():
-        flash('Доступ запрещён.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
     name = request.form.get('name', '').strip()
@@ -949,7 +927,7 @@ def manager_add_room_amenity():
         return redirect(url_for('manager_amenities'))
 
     try:
-        with get_connection() as con:
+        with connection() as con:
             con.execute('INSERT INTO room_amenity (name) VALUES (%s)', (name,))
         flash('Удобство номера добавлено!', 'success')
     except Exception as e:
@@ -962,11 +940,11 @@ def manager_add_room_amenity():
 @login_required
 def manager_delete_room_amenity(amenity_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
     try:
-        with get_connection() as con:
+        with connection() as con:
             con.execute('DELETE FROM room_type_amenity WHERE amenity_id = %s', (amenity_id,))
             con.execute('DELETE FROM room_amenity WHERE id = %s', (amenity_id,))
         flash('Удобство удалено!', 'success')
@@ -976,27 +954,23 @@ def manager_delete_room_amenity(amenity_id):
     return redirect(url_for('manager_amenities'))
 
 
-# ==================== МЕНЕДЖЕР: НАЗНАЧЕНИЕ УДОБСТВ ГОСТИНИЦЕ ====================
-
 @app.route('/manager/hotels/<int:hotel_id>/amenities', methods=['GET', 'POST'])
 @login_required
 def manager_hotel_amenities(hotel_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
     try:
-        with get_connection() as con:
+        with connection() as con:
             hotel = con.execute('SELECT id, name FROM hotel WHERE id = %s', (hotel_id,)).fetchone()
             if not hotel:
                 flash('Гостиница не найдена', 'danger')
                 return redirect(url_for('manager_hotels'))
 
             if request.method == 'POST':
-                # Получаем выбранные удобства из формы
                 selected = request.form.getlist('amenities')
 
-                # Удаляем старые и добавляем новые
                 con.execute('DELETE FROM hotel_amenity_link WHERE hotel_id = %s', (hotel_id,))
                 for amenity_id in selected:
                     con.execute('INSERT INTO hotel_amenity_link (hotel_id, amenity_id) VALUES (%s, %s)',
@@ -1005,7 +979,6 @@ def manager_hotel_amenities(hotel_id):
                 flash('Удобства гостиницы обновлены!', 'success')
                 return redirect(url_for('manager_hotels'))
 
-            # GET запрос
             all_amenities = con.execute('SELECT id, name FROM hotel_amenity ORDER BY name').fetchall()
             current_amenities = con.execute(
                 'SELECT amenity_id FROM hotel_amenity_link WHERE hotel_id = %s', (hotel_id,)
@@ -1019,19 +992,17 @@ def manager_hotel_amenities(hotel_id):
         return redirect(url_for('manager_hotels'))
 
 
-# ==================== МЕНЕДЖЕР: НАЗНАЧЕНИЕ УДОБСТВ НОМЕРУ ====================
-
 @app.route('/manager/rooms/<int:room_id>/amenities', methods=['GET', 'POST'])
 @login_required
 def manager_room_amenities(room_id):
     if not current_user.is_manager():
-        flash('Доступ запрещён.', 'danger')
+        flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
 
     try:
-        with get_connection() as con:
+        with connection() as con:
             room = con.execute('''
-                SELECT rt.id, rt.name, rt.hotel_id, h.name as hotel_name
+                SELECT rt.id, rt.name, rt.hotel_id, h.name
                 FROM room_type rt
                 JOIN hotel h ON rt.hotel_id = h.id
                 WHERE rt.id = %s

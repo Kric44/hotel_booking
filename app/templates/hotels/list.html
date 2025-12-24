@@ -1,74 +1,75 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Гостиницы</h1>
+<h1>Отели</h1>
 
-<!-- Фильтры -->
 <div class="card mb-4">
     <div class="card-body">
-        <form method="GET" class="row g-3">
+        <form method="GET" class="row">
             <div class="col-md-3">
-                <label class="form-label">Страна</label>
                 <select name="country" class="form-select" onchange="this.form.submit()">
-                    <option value="">Все страны</option>
-                    {% for country in countries %}
-                        <option value="{{ country[0] }}" {% if selected_country == country[0] %}selected{% endif %}>
-                            {{ country[1] }}
+                    <option value="">Страна</option>
+                    {% for c in countries %}
+                        <option value="{{ c[0] }}" 
+                                {% if selected_country == c[0] %}
+                                    selected
+                                {% endif %}>{{ c[1] }}
                         </option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Город</label>
                 <select name="city" class="form-select" onchange="this.form.submit()">
-                    <option value="">Все города</option>
-                    {% for city in cities %}
-                        <option value="{{ city[0] }}" {% if selected_city == city[0] %}selected{% endif %}>
-                            {{ city[1] }}
+                    <option value="">Город</option>
+                    {% for c in cities %}
+                        <option value="{{ c[0] }}" 
+                                {% if selected_city == c[0] %}
+                                    selected
+                                {% endif %}>{{ c[1] }}
                         </option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Звёзды</label>
                 <select name="stars" class="form-select" onchange="this.form.submit()">
-                    <option value="">Любые</option>
+                    <option value="">Звёздность</option>
                     {% for s in range(5, 0, -1) %}
-                        <option value="{{ s }}" {% if selected_stars == s %}selected{% endif %}>
-                            {{ '★' * s }}
-                        </option>
+                        <option value="{{ s }}" 
+                                {% if selected_stars == s %}
+                                    selected
+                                {% endif %}>
+                            {{ s }} ★
+                    </option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <a href="{{ url_for('hotels') }}" class="btn btn-outline-secondary">Сбросить фильтры</a>
+            <div class="col-md-3">
+                <a href="{{ url_for('hotels') }}" class="btn btn-secondary">Очистить</a>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Список гостиниц -->
 {% if hotels|length == 0 %}
-    <div class="alert alert-info">Гостиницы не найдены. Попробуйте изменить параметры поиска.</div>
+    <p>Ничего не найдено. <br> Попробуйте убрать фильтры или поменять их.</p>
 {% else %}
     <div class="row">
-        {% for hotel in hotels %}
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
+        {% for h in hotels %}
+        <div class="col-md-6 mb-3">
+            <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">{{ hotel[1] }}</h5>
-                    <p class="text-warning mb-2">
-                        {% for i in range(hotel[2]) %}★{% endfor %}
+                    <h5>
+                        {{ h[1] }} 
+                        <small class="text-warning">
+                            {% for i in range(h[2]) %} 
+                                ★
+                            {% endfor %}
+                        </small>
+                    </h5>
+                    <p class="text-muted">
+                        {{ h[4] }}, {{ h[5] }}
                     </p>
-                    <p class="text-muted">{{ hotel[4] }}, {{ hotel[5] }}</p>
-                    {% if hotel[3] %}
-                        <p class="card-text">{{ hotel[3][:150] }}{% if hotel[3]|length > 150 %}...{% endif %}</p>
-                    {% endif %}
-                </div>
-                <div class="card-footer">
-                    <a href="{{ url_for('hotel_details', hotel_id=hotel[0]) }}" class="btn btn-primary">
-                        Подробнее
-                    </a>
+                    <a href="{{ url_for('hotel_details', hotel_id=h[0]) }}" class="btn btn-primary btn-sm">Подробнее</a>
                 </div>
             </div>
         </div>

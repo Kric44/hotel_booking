@@ -2,50 +2,41 @@
 
 {% block content %}
 <h1>Панель менеджера</h1>
-
-<div class="row mb-4">
+<div class="row my-2">
     <div class="col-md-4">
-        <div class="card text-white bg-primary">
-            <div class="card-body text-center">
-                <h2 class="mb-0">{{ hotels_count }}</h2>
-                <p class="mb-0">Гостиницы</p>
-            </div>
+        <div class="card text-white bg-primary text-center p-3">
+            <h2>{{ hotels_count }}</h2>Гостиниц
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card text-white bg-success">
-            <div class="card-body text-center">
-                <h2 class="mb-0">{{ rooms_count }}</h2>
-                <p class="mb-0">Типы номеров</p>
-            </div>
+        <div class="card text-white bg-success text-center p-3">
+            <h2>{{ rooms_count }}</h2>Номеров
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card text-white bg-info">
-            <div class="card-body text-center">
-                <h2 class="mb-0">{{ bookings_count }}</h2>
-                <p class="mb-0">Бронирования</p>
-            </div>
+        <div class="card text-white bg-info text-center p-3">
+            <h2>{{ bookings_count }}</h2>Бронирований
         </div>
     </div>
 </div>
 
+<h2 class="mt-3">Управление</h2>
 <div class="row">
-    <div class="col-md-6 mb-3">
-        <div class="card h-100">
+    <div class="col-md-6">
+        <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Гостиницы</h5>
-                <p class="card-text">Добавляйте, редактируйте и удаляйте гостиницы. Управляйте типами номеров для каждой гостиницы.</p>
-                <a href="{{ url_for('manager_hotels') }}" class="btn btn-primary">Управление гостиницами</a>
+                <h5>Гостиницы</h5>
+                <p class="text-muted">Добавление, редактирование и удаление гостиниц</p>
+                <a href="{{ url_for('manager_hotels') }}" class="btn btn-outline-primary">Перейти</a>
             </div>
         </div>
     </div>
-    <div class="col-md-6 mb-3">
-        <div class="card h-100">
+    <div class="col-md-6">
+        <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Удобства</h5>
-                <p class="card-text">Управляйте каталогом удобств для гостиниц и номеров.</p>
-                <a href="{{ url_for('manager_amenities') }}" class="btn btn-primary">Управление удобствами</a>
+                <h5>Удобства</h5>
+                <p class="text-muted">Управление списком удобств для гостиниц и номеров</p>
+                <a href="{{ url_for('manager_amenities') }}" class="btn btn-outline-primary">Перейти</a>
             </div>
         </div>
     </div>

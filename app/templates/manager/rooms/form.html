@@ -2,27 +2,18 @@
 {% from 'bootstrap5/form.html' import render_form %}
 
 {% block content %}
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('manager_dashboard') }}">Менеджер</a></li>
-        <li class="breadcrumb-item"><a href="{{ url_for('manager_hotels') }}">Гостиницы</a></li>
-        <li class="breadcrumb-item"><a href="{{ url_for('manager_hotel_rooms', hotel_id=hotel[0]) }}">{{ hotel[1] }}</a></li>
-        <li class="breadcrumb-item active">{% if action == 'Add' %}Добавление{% else %}Редактирование{% endif %}</li>
-    </ol>
-</nav>
+<p><a href="{{ url_for('manager_hotel_rooms', hotel_id=hotel[0]) }}">< Назад</a></p>
+<h1>
+    {% if action == 'Add' %} Добавить
+    {% else %} Редактировать
+    {% endif %} номер</h1>
+<p class="text-muted">Гостиница: {{ hotel[1] }}</p>
 
-<div class="row justify-content-center">
+<div class="row">
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header">
-                <h3 class="mb-0">{% if action == 'Add' %}Добавить тип номера{% else %}Редактировать тип номера{% endif %}</h3>
-                <small class="text-muted">Гостиница: {{ hotel[1] }}</small>
-            </div>
             <div class="card-body">
                 {{ render_form(form) }}
-            </div>
-            <div class="card-footer">
-                <a href="{{ url_for('manager_hotel_rooms', hotel_id=hotel[0]) }}" class="btn btn-secondary">Отмена</a>
             </div>
         </div>
     </div>

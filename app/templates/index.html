@@ -1,38 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="p-5 mb-4 bg-light rounded-3">
-    <div class="container-fluid py-5">
-        <h1 class="display-5 fw-bold">Добро пожаловать!</h1>
-        <p class="col-md-8 fs-4">Найдите и забронируйте лучшие гостиницы по всему миру. Просматривайте каталог, сравнивайте цены и бронируйте прямо сейчас!</p>
-        <a href="{{ url_for('hotels') }}" class="btn btn-primary btn-lg">Смотреть гостиницы</a>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <h5 class="card-title">Широкий выбор</h5>
-                <p class="card-text">Гостиницы в разных странах и городах на любой вкус.</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <h5 class="card-title">Лучшие цены</h5>
-                <p class="card-text">Конкурентные цены на все типы номеров и категории.</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <h5 class="card-title">Быстрое бронирование</h5>
-                <p class="card-text">Простой и удобный процесс бронирования.</p>
-            </div>
-        </div>
-    </div>
+<div class="ps-3 pb-3 bg-light rounded">
+    <h1>Добро пожаловать!</h1>
+    <p class="lead">Найдите и забронируйте лучшие отели и гостиницы.</p>
+    <a href="{{ url_for('hotels') }}" class="btn btn-primary">Смотреть отели</a>
 </div>
 {% endblock %}
